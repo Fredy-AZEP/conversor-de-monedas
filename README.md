@@ -1,0 +1,1 @@
+Proyecto programado en Java para convertir una divisa en otra mediante el consumo de una API, derivado de esto se guarda la consulta en un archivo tipo JSON.
