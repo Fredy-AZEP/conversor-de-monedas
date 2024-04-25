@@ -1,6 +1,4 @@
-import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.net.URI;
@@ -8,56 +6,71 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class ConsultaMoneda {
 
-    Gson gson  = new GsonBuilder()
-            .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
-            .setPrettyPrinting()
-            .create();
-    String tipoMoneda = "USD";
-    public MonedaExchangeRate buscaMoneda() {
-        URI moneda = URI.create("https://v6.exchangerate-api.com/v6/f8fc36d27264791334c5f0df/latest/" + tipoMoneda);
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(moneda)
-                .build();
+    public MonedaExchangeRate buscaMoneda(int numeroElemento, int numeroElemento2, int cantidadPorConvertir) {
+        URI codigoPais = URI.create("https://v6.exchangerate-api.com/v6/f8fc36d27264791334c5f0df/codes");
 
+        int cantidad = cantidadPorConvertir;
         try {
+
+            //Obtencion del codigo del pais-----------------------------------------------------------------------------
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(codigoPais)
+                    .build();
             HttpResponse<String> response = null;
             response = client
                     .send(request, HttpResponse.BodyHandlers.ofString());
 
+            MonedaExchangeRate supported_codes = new Gson().fromJson(response.body(), MonedaExchangeRate.class);
+            Map<String, String> codigos = supported_codes.supported_codes();
 
-            String json = response.body();
-            System.out.println(json);
-            /*MonedaExchangeRate monedaExchangeRate = gson.fromJson(json, MonedaExchangeRate.class);
-            Moneda moneda1 = new Moneda(monedaExchangeRate);
-            System.out.println(moneda1);*/
+            //Obtener la moneda seleccionada----------------------------------------------------------------------------
+            Map<String, String> codigosOrdenados = new TreeMap<>(codigos);
 
-            //return new Gson().fromJson(response.body(), MonedaExchangeRate.class);
+            // Obtener el valor del mapa según el número dado
+            String valorDeseado = obtenerValorPorNumero(codigosOrdenados, numeroElemento);
+            String segundoValor = obtenerValorPorNumero2(codigosOrdenados, numeroElemento2);
 
-            MonedaExchangeRate exchangeRate = new Gson().fromJson(response.body(), MonedaExchangeRate.class);
 
-            Map<String, Double> conversion_rates = exchangeRate.conversion_rates();
+            // Imprimir el valor deseado del mapa
+            if (valorDeseado != null) {
 
-            Double ars = conversion_rates.get("ARS");
-            Double bob = conversion_rates.get("BOB");
-            Double brl = conversion_rates.get("BRL");
-            Double clp = conversion_rates.get("CLP");
-            Double cop = conversion_rates.get("COP");
-            Double usd = conversion_rates.get("USD");
+                System.out.println("Elegiste convertir: " + valorDeseado);
+            } else {
+                System.out.println("No se encontró el elemento #" + numeroElemento + " en el mapa.");
+            }
 
-            System.out.println(ars);
-            System.out.println(bob);
-            System.out.println(brl);
-            System.out.println(clp);
-            System.out.println(cop);
-            System.out.println(usd);
 
-            return exchangeRate;
-            //double usdToArg = (usd * 10) * usdToArgRate;
-            //System.out.println(usdToArg);
+            if (segundoValor != null) {
+
+                System.out.println("Se convertira " + valorDeseado + " por " + segundoValor);
+            } else {
+                System.out.println("No se encontró el elemento #" + numeroElemento2 + " en el mapa.");
+            }
+
+
+            //Obtnecion de la conversion--------------------------------------------------------------------------------
+
+            URI monedaSeleccionada = URI.create("https://v6.exchangerate-api.com/v6/f8fc36d27264791334c5f0df/pair/" + valorDeseado + "/" + segundoValor + "/" + cantidad);
+            System.out.println(monedaSeleccionada);
+            HttpClient client1 = HttpClient.newHttpClient();
+            HttpRequest request1 = HttpRequest.newBuilder()
+                    .uri(monedaSeleccionada)
+                    .build();
+            HttpResponse<String> response1 = client1
+                    .send(request1, HttpResponse.BodyHandlers.ofString());
+
+            MonedaExchangeRate conversion_result = new Gson().fromJson(response1.body(), MonedaExchangeRate.class);
+
+
+            Double resultado = conversion_result.conversion_result();
+            System.out.println(resultado);
+
+            return supported_codes;
 
 
         } catch (IOException | RuntimeException e) {
@@ -66,5 +79,28 @@ public class ConsultaMoneda {
             throw new RuntimeException("No valido.");
         }
 
+
+    }
+
+    private static String obtenerValorPorNumero(Map<String, String> mapa, int numero) {
+        int contador = 1;
+        for (Map.Entry<String, String> entry : mapa.entrySet()) {
+            if (contador == numero) {
+                return entry.getKey();
+            }
+            contador++;
+        }
+        return null; // Devolver null si el número está fuera de rango
+    }
+
+    private static String obtenerValorPorNumero2(Map<String, String> mapa, int numero2) {
+        int contador = 1;
+        for (Map.Entry<String, String> entry : mapa.entrySet()) {
+            if (contador == numero2) {
+                return entry.getKey();
+            }
+            contador++;
+        }
+        return null; // Devolver null si el número está fuera de rango
     }
 }
