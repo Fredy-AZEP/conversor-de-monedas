@@ -1,6 +1,7 @@
 import com.google.gson.Gson;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -46,9 +47,9 @@ public class Menu {
                 if (contador % elementosPorColumna == 0 && contador != 0) {
                     System.out.println("|");
                 }
-                if (contador % elementosPorColumna == 0) {
-                    System.out.println();
-                }
+                //if (contador % elementosPorColumna == 0) {
+                //System.out.println();
+                //}
                 System.out.printf("| %-10s ", n + "." + entry.getKey());
                 n++;
                 contador++;
@@ -66,6 +67,8 @@ public class Menu {
 
 
             return supported_codes;
+        } catch (SocketException e) {
+            throw new RuntimeException("Error al establecer una conexion con la api");
         } catch (IOException | RuntimeException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
